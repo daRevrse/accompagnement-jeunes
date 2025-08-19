@@ -6,74 +6,53 @@ use App\Http\Controllers\Controller;
 use App\Models\Action;
 use App\Models\Promoteur;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class AdminDashboardController extends Controller
 {
-    //
-    public function index()
+    public function dashboard()
     {
-        $nbPromoteurs = Promoteur::count();
-        $nbActions = Action::count();
-        $totalChiffreAffaires = Action::sum('chiffre_affaires');
+        // OPTIMISATION: Utiliser des requêtes agrégées plutôt que count()
+        $stats = DB::table('promoteurs')->selectRaw('
+            COUNT(*) as nb_promoteurs
+        ')->first();
 
-        // Actions par mois (12 derniers mois)
-        $actionsParMois = Action::selectRaw('MONTH(date_action) as mois, COUNT(*) as total')
+        $actionStats = DB::table('actions')->selectRaw('
+            COUNT(*) as nb_actions,
+            SUM(chiffre_affaires) as total_chiffre_affaires,
+            SUM(CASE WHEN entreprise_active = 1 THEN 1 ELSE 0 END) as actives,
+            SUM(CASE WHEN entreprise_active = 0 THEN 1 ELSE 0 END) as inactives
+        ')->first();
+
+        // Actions par mois (optimisé)
+        $actionsParMois = DB::table('actions')
+            ->selectRaw("DATE_FORMAT(date_action, '%Y-%m') as mois, COUNT(*) as total")
             ->where('date_action', '>=', now()->subMonths(11)->startOfMonth())
             ->groupBy('mois')
+            ->orderBy('mois')
+            ->get()
             ->pluck('total', 'mois');
 
+        // Préparer les données pour le graphique
         $moisLabels = [];
         $moisData = [];
 
-        foreach (range(1, 12) as $m) {
-            $moisLabels[] = Carbon::create()->month($m)->locale('fr_FR')->isoFormat('MMMM');
-            $moisData[] = $actionsParMois->get($m, 0);
+        for ($i = 11; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $moisKey = $date->format('Y-m');
+            $moisLabels[] = $date->locale('fr_FR')->isoFormat('MMMM YYYY');
+            $moisData[] = $actionsParMois->get($moisKey, 0);
         }
 
-        // Répartition entreprise active / inactive
-        $actives = Action::where('entreprise_active', true)->count();
-        $inactives = Action::where('entreprise_active', false)->count();
-
-        return view('admin.dashboard', compact(
-            'nbPromoteurs',
-            'nbActions',
-            'totalChiffreAffaires',
-            'moisLabels',
-            'moisData',
-            'actives',
-            'inactives'
-        ));
-    }
-
-    public function dashboard()
-    {
-        $nbPromoteurs = Promoteur::count();
-        $nbActions = Action::count();
-        $totalChiffreAffaires = Action::sum('chiffre_affaires');
-
-        // Camembert
-        $actives = Action::where('entreprise_active', true)->count();
-        $inactives = Action::where('entreprise_active', false)->count();
-
-        // Ligne par mois
-        $actionsParMois = Action::selectRaw("DATE_FORMAT(date_action, '%Y-%m') as mois, COUNT(*) as total")
-            ->groupBy('mois')
-            ->orderBy('mois')
-            ->get();
-
-        $moisLabels = $actionsParMois->pluck('mois');
-        $moisData = $actionsParMois->pluck('total');
-
-        return view('admin.dashboard', compact(
-            'nbPromoteurs',
-            'nbActions',
-            'totalChiffreAffaires',
-            'actives',
-            'inactives',
-            'moisLabels',
-            'moisData'
-        ));
+        return view('admin.dashboard', [
+            'nbPromoteurs' => $stats->nb_promoteurs,
+            'nbActions' => $actionStats->nb_actions,
+            'totalChiffreAffaires' => $actionStats->total_chiffre_affaires ?? 0,
+            'actives' => $actionStats->actives,
+            'inactives' => $actionStats->inactives,
+            'moisLabels' => $moisLabels,
+            'moisData' => $moisData,
+        ]);
     }
 }

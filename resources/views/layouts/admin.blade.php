@@ -35,6 +35,9 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('admin.actions.index') }}">📝 Actions</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('admin.promoteurs.index') }}">👤 Promoteurs</a>
+                    </li>
                     {{-- Ajoute d'autres liens admin ici --}}
                 </ul>
                 <ul class="navbar-nav ms-auto">

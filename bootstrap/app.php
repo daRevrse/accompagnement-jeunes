@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         //
         $middleware->alias([
             'is_admin' => \App\Http\Middleware\IsAdmin::class,
+            'memory_limit' => \App\Http\Middleware\MemoryLimit::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -31,8 +31,8 @@
     <div class="mb-3">
         <label for="role" class="form-label">Rôle</label>
         <select name="role" id="role" class="form-select" required>
-            <option value="rh">Promoteur</option>
-            <option value="admin">RH</option>
+            <!-- <option value="rh">Promoteur</option> -->
+            <option value="rh">RH</option>
             <option value="admin">Admin</option>
         </select>
     </div>

@@ -29,6 +29,9 @@ class ActionController extends Controller
         $actions = $query->latest()->paginate(15)->withQueryString();
         $promoteurs = \App\Models\Promoteur::all();
 
+        if (auth()->check() && auth()->user()->role === 'admin') {
+            return view('admin.actions.index', compact('actions', 'promoteurs'));
+        }
         return view('admin.actions.index', compact('actions', 'promoteurs'));
     }
 
@@ -36,6 +39,9 @@ class ActionController extends Controller
     public function create($id)
     {
         $promoteur = Promoteur::findOrFail($id);
+        if (auth()->check() && auth()->user()->role === 'admin') {
+            return view('admin.actions.create', compact('promoteur'));
+        }
         return view('actions.create', compact('promoteur'));
     }
 
@@ -69,6 +75,11 @@ class ActionController extends Controller
 
         Action::create($validated);
 
+        if (auth()->check() && auth()->user()->role === 'admin') {
+            return redirect()->route('admin.promoteurs.show', $promoteurId)
+                ->with('success', 'L\'action a été ajoutée avec succès.');
+        }
+
         return redirect()->route('promoteurs.show', $promoteurId)
             ->with('success', 'L\'action a été ajoutée avec succès.');
     }
@@ -77,6 +88,10 @@ class ActionController extends Controller
     public function show($id)
     {
         $action = Action::findOrFail($id);
+
+        if (auth()->check() && auth()->user()->role === 'admin') {
+            return view('admin.actions.show', compact('action'));
+        }
         return view('actions.show', compact('action'));
     }
 
