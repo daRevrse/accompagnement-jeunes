@@ -8,59 +8,59 @@ use App\Http\Controllers\ActionController;
 use App\Http\Controllers\RhController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProfileController;
 use Maatwebsite\Excel\Facades\Excel;
+
+/*
+|--------------------------------------------------------------------------
+| Routes publiques
+|--------------------------------------------------------------------------
+*/
 
 // Page d'accueil
 Route::get('/', function () {
     return auth()->check() ? redirect()->route('dashboard') : view('welcome');
 });
 
-// Routes d'authentification (générées par Breeze)
-// require __DIR__ . '/auth.php';
-// Authentification
-Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+// Routes d'authentification Laravel Breeze
+require __DIR__ . '/auth.php';
 
-// Enregistrement du formulaire
-Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-Route::post('/register', [AuthController::class, 'register']);
 
-// =================
-// ROUTES ADMIN
-// =================
+/*
+|--------------------------------------------------------------------------
+| Routes ADMIN (nécessite authentification + rôle admin)
+|--------------------------------------------------------------------------
+*/
+
 Route::middleware(['auth', 'is_admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/', [AdminDashboardController::class, 'dashboard'])->name('dashboard');
+
+    // Dashboard admin
     Route::get('/dashboard', [AdminDashboardController::class, 'dashboard'])->name('dashboard');
 
     // Gestion des utilisateurs
     Route::resource('users', UserController::class)->except(['show']);
 
-    // Gestion des promoteurs
+    // Gestion des promoteurs (admin)
     Route::resource('promoteurs', PromoteurController::class);
 
-    Route::get('/promoteurs/create', [PromoteurController::class, 'create'])->name('promoteurs.create');
-    Route::post('/promoteurs', [PromoteurController::class, 'store'])->name('promoteurs.store');
-    Route::get('/promoteurs/{id}', [PromoteurController::class, 'show'])->name('promoteurs.show');
-    Route::get('/promoteurs/{id}/edit', [PromoteurController::class, 'edit'])->name('promoteurs.edit');
-    Route::post('/promoteurs/{promoteur}', [PromoteurController::class, 'update'])->name('promoteurs.update');
-    Route::delete('/promoteurs/{promoteur}', [PromoteurController::class, 'destroy'])->name('promoteurs.destroy');
+    // Gestion des actions (admin)
+    Route::resource('actions', ActionController::class)->only(['index', 'show']);
 
-    // Gestion des actions (vue admin)
-    Route::get('/actions', [ActionController::class, 'index'])->name('actions.index');
-
-    Route::get('/actions/{action}', [ActionController::class, 'show'])->name('actions.show');
-
-
-    // Exports
+    // Exports Promoteurs
     Route::get('/promoteurs/export/excel', function () {
         return Excel::download(new PromoteursExport, 'promoteurs.xlsx');
     })->name('promoteurs.export.excel');
 
     Route::get('/promoteurs/export/pdf', [UserController::class, 'exportPromoteursPdf'])
         ->name('promoteurs.export.pdf');
+
+    // Exports Utilisateurs
+    Route::get('/users/export/excel', function () {
+        return Excel::download(new \App\Exports\UsersExport, 'utilisateurs.xlsx');
+    })->name('users.export.excel');
+
+    Route::get('/users/export/pdf', [UserController::class, 'exportUsersPdf'])
+        ->name('users.export.pdf');
 
     Route::get('/actions/export/excel', function (\Illuminate\Http\Request $request) {
         return Excel::download(new ActionsExport($request->all()), 'actions.xlsx');
@@ -70,44 +70,38 @@ Route::middleware(['auth', 'is_admin'])->prefix('admin')->name('admin.')->group(
         ->name('actions.export.pdf');
 });
 
-// =================
-// ROUTES RH & UTILISATEURS CONNECTÉS
-// =================
+
+/*
+|--------------------------------------------------------------------------
+| Routes UTILISATEURS AUTHENTIFIÉS (RH + Promoteurs)
+|--------------------------------------------------------------------------
+*/
+
 Route::middleware(['auth'])->group(function () {
 
     // Dashboard principal
     Route::get('/dashboard', [RhController::class, 'index'])->name('dashboard');
 
-    // Gestion du profil
+    // Gestion du profil utilisateur
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // =================
-    // PROMOTEURS (Resource complète)
-    // =================
+    // ===== PROMOTEURS =====
     Route::resource('promoteurs', PromoteurController::class);
 
-    Route::get('/promoteurs/create', [PromoteurController::class, 'create'])->name('promoteurs.create');
-    Route::post('/promoteurs', [PromoteurController::class, 'store'])->name('promoteurs.store');
-    Route::get('/promoteurs/{id}', [PromoteurController::class, 'show'])->name('promoteurs.show');
-    Route::get('/promoteurs/{id}/edit', [PromoteurController::class, 'edit'])->name('promoteurs.edit');
-    Route::post('/promoteurs/{promoteur}', [PromoteurController::class, 'update'])->name('promoteurs.update');
-    Route::delete('/promoteurs/{promoteur}', [PromoteurController::class, 'destroy'])->name('promoteurs.destroy');
-
-    // =================
-    // ACTIONS
-    // =================
+    // ===== ACTIONS =====
+    // Création d'action liée à un promoteur
     Route::prefix('promoteurs/{promoteur}')->name('actions.')->group(function () {
         Route::get('/actions/create', [ActionController::class, 'create'])->name('create');
         Route::post('/actions', [ActionController::class, 'store'])->name('store');
     });
 
+    // Affichage d'une action
     Route::get('/actions/{action}', [ActionController::class, 'show'])->name('actions.show');
 
-    // =================
-    // ROUTES RH SPÉCIFIQUES
-    // =================
+
+    // ===== ROUTES RH SPÉCIFIQUES =====
     Route::middleware('role:rh')->prefix('rh')->name('rh.')->group(function () {
         Route::get('/dashboard', [RhController::class, 'dashboard'])->name('dashboard');
         Route::get('/stats', [RhController::class, 'stats'])->name('stats');
@@ -115,16 +109,23 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
-// =================
-// ROUTES API (optionnel pour AJAX)
-// =================
+
+/*
+|--------------------------------------------------------------------------
+| Routes API (optionnel pour AJAX)
+|--------------------------------------------------------------------------
+*/
+
 Route::middleware(['auth'])->prefix('api')->name('api.')->group(function () {
+
+    // Actions d'un promoteur (AJAX)
     Route::get('/promoteurs/{promoteur}/actions', function (\App\Models\Promoteur $promoteur) {
         return response()->json([
             'actions' => $promoteur->actions()->with('createdBy')->latest('date_action')->get()
         ]);
     })->name('promoteurs.actions');
 
+    // Stats dashboard (AJAX)
     Route::get('/stats/dashboard', function () {
         return response()->json([
             'promoteurs' => \App\Models\Promoteur::count(),

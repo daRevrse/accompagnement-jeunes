@@ -1,116 +1,183 @@
-{{-- resources/views/promoteurs/index.blade.php - VERSION OPTIMISÉE --}}
-@extends('layouts.app')
+@extends(auth()->user()->role === 'admin' ? 'layouts.admin' : 'layouts.app')
 
 @section('content')
-<div class="container">
+<div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>👥 Liste des promoteurs ({{ $promoteurs->total() }})</h1>
-        <a href="{{ route('promoteurs.create') }}" class="btn btn-primary">
-            ➕ Nouveau promoteur
+        <div>
+            <h1><i class="bi bi-people-fill"></i> Gestion des promoteurs</h1>
+            <p class="text-muted mb-0">{{ $promoteurs->total() }} promoteur(s) enregistré(s)</p>
+        </div>
+        <a href="{{ auth()->user()->role === 'admin' ? route('admin.promoteurs.create') : route('promoteurs.create') }}"
+            class="btn btn-primary btn-lg">
+            <i class="bi bi-plus-circle"></i> Nouveau promoteur
         </a>
     </div>
 
-    {{-- Formulaire de recherche optimisé --}}
-    <form method="GET" action="{{ route('promoteurs.index') }}" class="mb-4">
-        <div class="row g-3">
-            <div class="col-md-6">
-                <input type="text" name="search" value="{{ request('search') }}"
-                    class="form-control" placeholder="Rechercher par nom, email ou projet...">
-            </div>
-            <div class="col-md-3">
-                <select name="statut" class="form-select">
-                    <option value="">Tous les statuts</option>
-                    <option value="actif" {{ request('statut') === 'actif' ? 'selected' : '' }}>Entreprises actives</option>
-                    <option value="inactif" {{ request('statut') === 'inactif' ? 'selected' : '' }}>Entreprises inactives</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <button type="submit" class="btn btn-outline-primary w-100">🔍 Rechercher</button>
-            </div>
+    {{-- Formulaire de recherche moderne --}}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ auth()->user()->role === 'admin' ? route('admin.promoteurs.index') : route('promoteurs.index') }}">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" name="search" value="{{ request('search') }}"
+                                class="form-control border-start-0" placeholder="Rechercher par nom, email ou projet...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="statut" class="form-select">
+                            <option value="">📊 Tous les statuts</option>
+                            <option value="actif" {{ request('statut') === 'actif' ? 'selected' : '' }}>
+                                ✅ Entreprises actives
+                            </option>
+                            <option value="inactif" {{ request('statut') === 'inactif' ? 'selected' : '' }}>
+                                ❌ Entreprises inactives
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-grow-1">
+                                <i class="bi bi-funnel"></i> Filtrer
+                            </button>
+                            <a href="{{ auth()->user()->role === 'admin' ? route('admin.promoteurs.index') : route('promoteurs.index') }}"
+                                class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
         </div>
-    </form>
+    </div>
+
+    @if(auth()->user()->role === 'admin')
+    {{-- Boutons d'export (admin uniquement) --}}
+    <div class="mb-4">
+        <a href="{{ route('admin.promoteurs.export.excel') }}" class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-excel"></i> Export Excel
+        </a>
+        <a href="{{ route('admin.promoteurs.export.pdf') }}" class="btn btn-outline-danger">
+            <i class="bi bi-file-earmark-pdf"></i> Export PDF
+        </a>
+    </div>
+    @endif
 
     @if($promoteurs->count())
-    <div class="card">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Nom</th>
-                        <th>Projet</th>
-                        <th>Date d'entrée</th>
-                        <th>Dernière action</th>
-                        <th>Statut</th>
-                        <th class="text-center">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($promoteurs as $promoteur)
-                    @php
-                    // Récupérer la dernière action de manière optimisée
-                    $derniereAction = $promoteur->actions->first();
-                    @endphp
-                    <tr>
-                        <td>
-                            <strong>{{ $promoteur->nom }}</strong>
-                            <br><small class="text-muted">{{ $promoteur->email }}</small>
-                        </td>
-                        <td>{{ Str::limit($promoteur->projet, 30) }}</td>
-                        <td>
-                            {{ $promoteur->date_entree_accompagnement ? $promoteur->date_entree_accompagnement->format('d/m/Y') : '-' }}
-                        </td>
-                        <td>
-                            @if($derniereAction)
-                            {{ $derniereAction->date_action->format('d/m/Y') }}
-                            <br><small class="text-muted">{{ $derniereAction->chiffre_affaires ? number_format($derniereAction->chiffre_affaires, 0, ',', ' ') . ' FCFA' : 'Pas de CA' }}</small>
-                            @else
-                            <span class="text-muted">Aucune action</span>
-                            @endif
-                        </td>
-                        <td>
-                            @if($derniereAction)
-                            <span class="badge {{ $derniereAction->entreprise_active ? 'bg-success' : 'bg-danger' }}">
-                                {{ $derniereAction->entreprise_active ? 'Active' : 'Inactive' }}
-                            </span>
-                            @else
-                            <span class="badge bg-secondary">Inconnu</span>
-                            @endif
-                        </td>
-                        <td class="text-center">
-                            <div class="btn-group btn-group-sm">
-                                <a href="{{ route('promoteurs.show', $promoteur) }}" class="btn btn-outline-info" title="Voir les détails">
-                                    👁️
-                                </a>
-                                <a href="{{ route('promoteurs.edit', $promoteur) }}" class="btn btn-outline-primary" title="Modifier">
-                                    ✏️
-                                </a>
-                                <a href="{{ route('actions.create', $promoteur) }}" class="btn btn-outline-success" title="Nouvelle action">
-                                    ➕
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+    <div class="row g-4">
+        @foreach($promoteurs as $promoteur)
+        @php
+        $derniereAction = $promoteur->actions->first();
+        @endphp
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="card-title mb-1">
+                                <i class="bi bi-person-circle text-primary"></i>
+                                {{ $promoteur->nom }}
+                            </h5>
+                            <p class="text-muted mb-0 small">
+                                <i class="bi bi-envelope"></i> {{ $promoteur->email }}
+                            </p>
+                        </div>
+                        @if($derniereAction)
+                        <span class="badge {{ $derniereAction->entreprise_active ? 'bg-success' : 'bg-danger' }}">
+                            {{ $derniereAction->entreprise_active ? '✓ Active' : '✗ Inactive' }}
+                        </span>
+                        @else
+                        <span class="badge bg-secondary">Aucune action</span>
+                        @endif
+                    </div>
 
-        {{-- Pagination --}}
-        @if($promoteurs->hasPages())
-        <div class="card-footer">
-            {{ $promoteurs->links() }}
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded">
+                                <div class="small text-muted">Projet</div>
+                                <div class="fw-bold text-truncate" title="{{ $promoteur->projet }}">
+                                    {{ Str::limit($promoteur->projet, 20) }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded">
+                                <div class="small text-muted">Accompagnement</div>
+                                <div class="fw-bold">
+                                    {{ $promoteur->date_entree_accompagnement ? $promoteur->date_entree_accompagnement->format('d/m/Y') : 'Non renseigné' }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if($derniereAction)
+                    <div class="p-3 bg-light rounded mb-3">
+                        <div class="small text-muted mb-1">Dernière action</div>
+                        <div class="d-flex justify-content-between">
+                            <span class="fw-bold">{{ $derniereAction->date_action->format('d/m/Y') }}</span>
+                            <span class="text-success fw-bold">
+                                {{ $derniereAction->chiffre_affaires ? number_format($derniereAction->chiffre_affaires, 0, ',', ' ') . ' FCFA' : '-' }}
+                            </span>
+                        </div>
+                    </div>
+                    @endif
+
+                    <div class="d-flex gap-2">
+                        <a href="{{ auth()->user()->role === 'admin' ? route('admin.promoteurs.show', $promoteur) : route('promoteurs.show', $promoteur) }}"
+                            class="btn btn-outline-primary btn-sm flex-grow-1">
+                            <i class="bi bi-eye"></i> Voir
+                        </a>
+                        <a href="{{ auth()->user()->role === 'admin' ? route('admin.promoteurs.edit', $promoteur) : route('promoteurs.edit', $promoteur) }}"
+                            class="btn btn-outline-warning btn-sm">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{{ route('actions.create', $promoteur) }}"
+                            class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-plus"></i>
+                        </a>
+
+                        @if(auth()->user()->role === 'admin')
+                        <form action="{{ route('admin.promoteurs.destroy', $promoteur) }}" method="POST" class="d-inline"
+                            onsubmit="return confirm('Confirmer la suppression de {{ $promoteur->nom }} ?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                        @endif
+                    </div>
+                </div>
+            </div>
         </div>
-        @endif
+        @endforeach
     </div>
+
+    @if($promoteurs->hasPages())
+    <div class="mt-4">
+        {{ $promoteurs->links() }}
+    </div>
+    @endif
     @else
-    <div class="alert alert-info text-center">
-        <h4>Aucun promoteur trouvé</h4>
-        <p>{{ request('search') ? 'Aucun résultat pour votre recherche.' : 'Aucun promoteur enregistré.' }}</p>
-        @if(!request('search'))
-        <a href="{{ route('promoteurs.create') }}" class="btn btn-primary">
-            ➕ Créer le premier promoteur
-        </a>
-        @endif
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <div class="mb-4">
+                <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+            </div>
+            <h4>Aucun promoteur trouvé</h4>
+            <p class="text-muted">
+                {{ request('search') ? 'Aucun résultat pour votre recherche.' : 'Aucun promoteur enregistré.' }}
+            </p>
+            @if(!request('search'))
+            <a href="{{ auth()->user()->role === 'admin' ? route('admin.promoteurs.create') : route('promoteurs.create') }}"
+                class="btn btn-primary mt-3">
+                <i class="bi bi-plus-circle"></i> Créer le premier promoteur
+            </a>
+            @endif
+        </div>
     </div>
     @endif
 </div>

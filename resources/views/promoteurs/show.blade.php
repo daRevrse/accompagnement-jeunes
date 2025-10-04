@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends(auth()->user()->role === 'admin' ? 'layouts.admin' : 'layouts.app')
 
 @section('content')
 <div class="container">
@@ -9,7 +9,8 @@
             <p class="text-muted mb-0">{{ $promoteur->projet }}</p>
         </div>
         <div>
-            <a href="{{ route('promoteurs.edit', $promoteur) }}" class="btn btn-outline-primary me-2">
+            <a href="{{ auth()->user()->role === 'admin' ? route('admin.promoteurs.edit', $promoteur) : route('promoteurs.edit', $promoteur) }}"
+                class="btn btn-outline-primary me-2">
                 ✏️ Modifier
             </a>
             <a href="{{ route('actions.create', $promoteur) }}" class="btn btn-success">
@@ -57,15 +58,11 @@
                         <span>CA moyen :</span>
                         <strong>{{ number_format($stats['ca_moyen'], 0, ',', ' ') }} FCFA</strong>
                     </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Statut :</span>
-                        @if($stats['entreprise_active'] === true)
-                        <span class="badge bg-success">Actif</span>
-                        @elseif($stats['entreprise_active'] === false)
-                        <span class="badge bg-danger">Inactif</span>
-                        @else
-                        <span class="badge bg-secondary">Inconnu</span>
-                        @endif
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Statut entreprise :</span>
+                        <span class="badge {{ $stats['entreprise_active'] ? 'bg-success' : 'bg-danger' }}">
+                            {{ $stats['entreprise_active'] ? 'Active' : 'Inactive' }}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -75,17 +72,12 @@
     <!-- Liste des actions -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">📝 Historique des actions ({{ $stats['total_actions'] }})</h5>
-            @if($stats['derniere_action'])
-            <small class="text-muted">
-                Dernière action : {{ $stats['derniere_action']->date_action->format('d/m/Y') }}
-            </small>
-            @endif
+            <h5 class="mb-0">📝 Actions réalisées ({{ $stats['total_actions'] }})</h5>
         </div>
 
         @if($actions->count())
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
+            <table class="table table-hover mb-0 align-middle">
                 <thead class="table-light">
                     <tr>
                         <th>Date</th>
@@ -94,18 +86,13 @@
                         <th class="text-end">CA (FCFA)</th>
                         <th class="text-end">Emplois</th>
                         <th>Créé par</th>
-                        <th class="text-center">Actions</th>
+                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($actions as $action)
                     <tr>
-                        <td>
-                            <strong>{{ $action->date_action->format('d/m/Y') }}</strong>
-                            @if($action->date_echeance_action)
-                            <br><small class="text-muted">Échéance: {{ $action->date_echeance_action->format('d/m/Y') }}</small>
-                            @endif
-                        </td>
+                        <td>{{ $action->date_action->format('d/m/Y') }}</td>
                         <td>
                             <span class="badge {{ $action->entreprise_active ? 'bg-success' : 'bg-danger' }}">
                                 {{ $action->entreprise_active ? 'Active' : 'Inactive' }}
@@ -129,9 +116,11 @@
         </div>
 
         <!-- Pagination -->
+        @if($actions->hasPages())
         <div class="card-footer">
             {{ $actions->links() }}
         </div>
+        @endif
         @else
         <div class="card-body text-center py-5">
             <div class="text-muted">
@@ -148,7 +137,8 @@
 
     <!-- Bouton retour -->
     <div class="mt-4">
-        <a href="{{ route('promoteurs.index') }}" class="btn btn-secondary">
+        <a href="{{ auth()->user()->role === 'admin' ? route('admin.promoteurs.index') : route('promoteurs.index') }}"
+            class="btn btn-secondary">
             ⬅️ Retour à la liste
         </a>
     </div>

@@ -2,19 +2,19 @@
 
 namespace App\Exports;
 
-use App\Models\Promoteur;
+use App\Models\User;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class PromoteursExport implements FromCollection, WithHeadings
+class UsersExport implements FromCollection, WithHeadings
 {
     /**
      * @return \Illuminate\Support\Collection
      */
     public function collection()
     {
-        // CORRECTION: utiliser 'nom' au lieu de 'name'
-        return Promoteur::select('nom', 'email', 'telephone', 'projet', 'date_entree_accompagnement')->get();
+        // Utiliser 'name' (correct pour la table users)
+        return User::select('name', 'email', 'role', 'created_at')->get();
     }
 
     /**
@@ -25,9 +25,8 @@ class PromoteursExport implements FromCollection, WithHeadings
         return [
             'Nom',
             'Email',
-            'Téléphone',
-            'Projet',
-            'Date d\'entrée'
+            'Rôle',
+            'Date de création'
         ];
     }
 }

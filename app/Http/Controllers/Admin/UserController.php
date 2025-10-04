@@ -11,13 +11,17 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    //
-
+    /**
+     * Affiche le formulaire de création
+     */
     public function create()
     {
         return view('admin.users.create');
     }
 
+    /**
+     * Enregistre un nouvel utilisateur
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -37,11 +41,12 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')->with('success', 'Utilisateur créé avec succès.');
     }
 
-
-
+    /**
+     * Affiche la liste des utilisateurs
+     */
     public function index(Request $request)
     {
-        $query = User::where('role', '!=', 'admin');
+        $query = User::query();
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -56,12 +61,17 @@ class UserController extends Controller
         return view('admin.users.index', compact('users'));
     }
 
-
+    /**
+     * Affiche le formulaire d'édition
+     */
     public function edit(User $user)
     {
         return view('admin.users.edit', compact('user'));
     }
 
+    /**
+     * Met à jour un utilisateur
+     */
     public function update(Request $request, User $user)
     {
         $request->validate([
@@ -80,7 +90,9 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')->with('success', 'Utilisateur mis à jour.');
     }
 
-
+    /**
+     * Supprime un utilisateur
+     */
     public function destroy(User $user)
     {
         if (auth()->id() === $user->id) {
@@ -91,10 +103,23 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')->with('success', 'Utilisateur supprimé.');
     }
 
+    /**
+     * Export PDF des promoteurs
+     */
     public function exportPromoteursPdf()
     {
         $promoteurs = Promoteur::all();
         $pdf = Pdf::loadView('exports.promoteurs_pdf', compact('promoteurs'));
-        return $pdf->download('liste_promoteurs.pdf');
+        return $pdf->download('promoteurs_' . date('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Export PDF des utilisateurs
+     */
+    public function exportUsersPdf()
+    {
+        $users = User::orderBy('name')->get();
+        $pdf = Pdf::loadView('exports.users_pdf', compact('users'));
+        return $pdf->download('utilisateurs_' . date('Y-m-d') . '.pdf');
     }
 }

@@ -6,14 +6,19 @@ use App\Models\Action;
 use App\Models\Promoteur;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class ActionController extends Controller
 {
-    public function index(Request $request)
+    /**
+     * Liste des actions avec filtres (réservé admin)
+     */
+    public function index(Request $request): View
     {
-        $query = Action::with('promoteur');
+        $query = Action::with('promoteur:id,nom,email,projet');
 
+        // Filtres
         if ($request->filled('promoteur_id')) {
             $query->where('promoteur_id', $request->promoteur_id);
         }
@@ -26,27 +31,25 @@ class ActionController extends Controller
             $query->where('entreprise_active', $request->entreprise_active);
         }
 
-        $actions = $query->latest()->paginate(15)->withQueryString();
-        $promoteurs = \App\Models\Promoteur::all();
+        $actions = $query->latest('date_action')->paginate(15)->withQueryString();
+        $promoteurs = Promoteur::select('id', 'nom')->orderBy('nom')->get();
 
-        if (auth()->check() && auth()->user()->role === 'admin') {
-            return view('admin.actions.index', compact('actions', 'promoteurs'));
-        }
-        return view('admin.actions.index', compact('actions', 'promoteurs'));
+        return view('actions.index', compact('actions', 'promoteurs'));
     }
 
-    // Affiche le formulaire de création
-    public function create($id)
+    /**
+     * Affiche le formulaire de création d'action
+     */
+    public function create($promoteurId): View
     {
-        $promoteur = Promoteur::findOrFail($id);
-        if (auth()->check() && auth()->user()->role === 'admin') {
-            return view('admin.actions.create', compact('promoteur'));
-        }
+        $promoteur = Promoteur::findOrFail($promoteurId);
         return view('actions.create', compact('promoteur'));
     }
 
-    // Enregistre une nouvelle action
-    public function store(Request $request, $promoteurId)
+    /**
+     * Enregistre une nouvelle action
+     */
+    public function store(Request $request, $promoteurId): RedirectResponse
     {
         $validated = $request->validate([
             'date_action' => 'required|date',
@@ -71,34 +74,36 @@ class ActionController extends Controller
         ]);
 
         $validated['promoteur_id'] = $promoteurId;
-        $validated['created_by'] = Auth::id();
+        $validated['created_by'] = auth()->id();
 
         Action::create($validated);
 
-        if (auth()->check() && auth()->user()->role === 'admin') {
-            return redirect()->route('admin.promoteurs.show', $promoteurId)
-                ->with('success', 'L\'action a été ajoutée avec succès.');
-        }
+        $route = auth()->user()->role === 'admin'
+            ? 'admin.promoteurs.show'
+            : 'promoteurs.show';
 
-        return redirect()->route('promoteurs.show', $promoteurId)
-            ->with('success', 'L\'action a été ajoutée avec succès.');
+        return redirect()
+            ->route($route, $promoteurId)
+            ->with('success', 'Action enregistrée avec succès.');
     }
 
-    // Affiche le détail d'une action
-    public function show($id)
+    /**
+     * Affiche le détail d'une action
+     */
+    public function show($actionId): View
     {
-        $action = Action::findOrFail($id);
-
-        if (auth()->check() && auth()->user()->role === 'admin') {
-            return view('admin.actions.show', compact('action'));
-        }
+        $action = Action::with(['promoteur', 'createdBy'])->findOrFail($actionId);
         return view('actions.show', compact('action'));
     }
 
+    /**
+     * Export PDF des actions (admin uniquement)
+     */
     public function exportActionsPdf(Request $request)
     {
         $query = Action::with('promoteur');
 
+        // Appliquer les mêmes filtres que l'index
         if ($request->filled('promoteur_id')) {
             $query->where('promoteur_id', $request->promoteur_id);
         }
@@ -111,9 +116,9 @@ class ActionController extends Controller
             $query->where('entreprise_active', $request->entreprise_active);
         }
 
-        $actions = $query->get();
+        $actions = $query->latest('date_action')->get();
 
         $pdf = Pdf::loadView('exports.actions_pdf', compact('actions'));
-        return $pdf->download('actions.pdf');
+        return $pdf->download('actions_' . date('Y-m-d') . '.pdf');
     }
 }
