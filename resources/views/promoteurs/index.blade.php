@@ -18,7 +18,7 @@
         <div class="card-body">
             <form method="GET" action="{{ auth()->user()->role === 'admin' ? route('admin.promoteurs.index') : route('promoteurs.index') }}">
                 <div class="row g-3">
-                    <div class="col-md-5">
+                    <div class="col-md-4">
                         <div class="input-group">
                             <span class="input-group-text bg-white border-end-0">
                                 <i class="bi bi-search"></i>
@@ -38,15 +38,20 @@
                             </option>
                         </select>
                     </div>
-                    <div class="col-md-4">
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary flex-grow-1">
-                                <i class="bi bi-funnel"></i> Filtrer
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-funnel"></i> Filtrer
+                        </button>
+                    </div>
+                    <div class="col-md-2">
+                        <!-- Switcher Vue Grille/Liste -->
+                        <div class="btn-group w-100" role="group">
+                            <button type="button" class="btn btn-outline-secondary" id="viewGrid" onclick="switchView('grid')">
+                                <i class="bi bi-grid-3x3-gap"></i>
                             </button>
-                            <a href="{{ auth()->user()->role === 'admin' ? route('admin.promoteurs.index') : route('promoteurs.index') }}"
-                                class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-clockwise"></i>
-                            </a>
+                            <button type="button" class="btn btn-outline-secondary active" id="viewList" onclick="switchView('list')">
+                                <i class="bi bi-list-ul"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
