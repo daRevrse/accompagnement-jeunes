@@ -14,13 +14,15 @@
 
     <style>
         body {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            /* background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); */
+            background: #f5f6fa;
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         .navbar {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+            /* background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important; */
+            background: #2c3e50 !important;
             box-shadow: 0 4px 6px rgba(0, 0, 0, .1);
         }
 
@@ -78,18 +80,28 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            border: none;
+            /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+            background: #0d6efd;
         }
 
         .btn-success {
-            background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
-            border: none;
+            /* background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%); */
+            background: #56ab2f;
         }
 
         .btn-danger {
-            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
-            border: none;
+            /* background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); */
+            background: #eb3349;
+        }
+
+        .btn-warning {
+            /* background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); */
+            background: #f093fb;
+        }
+
+        .btn-info {
+            /* background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); */
+            background: #4facfe;
         }
 
         .table thead {

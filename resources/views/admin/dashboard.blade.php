@@ -80,7 +80,7 @@
                             <h2 class="mb-0 fw-bold">{{ number_format($totalChiffreAffaires / 1000000, 1) }}M</h2>
                         </div>
                         <div class="fs-1 opacity-50">
-                            <i class="bi bi-currency-dollar"></i>
+                            <i class="bi bi-cash"></i>
                         </div>
                     </div>
                     <div class="mt-3 d-flex align-items-center">
@@ -100,7 +100,7 @@
                     <h5 class="card-title mb-4">
                         <i class="bi bi-bar-chart-line"></i> Évolution des actions (12 derniers mois)
                     </h5>
-                    <canvas id="actionsChart" height="100"></canvas>
+                    <canvas id="actionsChart" height="150"></canvas>
                 </div>
             </div>
         </div>
@@ -178,7 +178,7 @@
 </div>
 
 {{-- Scripts pour les graphiques --}}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Graphique des actions par mois
@@ -209,7 +209,8 @@
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            precision: 0
+                            precision: 0,
+                            stepSize: 1
                         }
                     }
                 }
@@ -217,21 +218,13 @@
         });
 
         // Graphique circulaire
-        const ctxRepartition = document.getElementById('repartitionChart');
+        const ctxRepartition = document.getElementById('repartitionChart').getContext('2d');
         new Chart(ctxRepartition, {
             type: 'doughnut',
             data: {
                 labels: ['Actives', 'Inactives'],
                 datasets: [{
-                    data: [{
-                        {
-                            $actives
-                        }
-                    }, {
-                        {
-                            $inactives
-                        }
-                    }],
+                    data: [@json($actives), @json($inactives)],
                     backgroundColor: [
                         'rgba(86, 171, 47, 0.8)',
                         'rgba(235, 51, 73, 0.8)'
